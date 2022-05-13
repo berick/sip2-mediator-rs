@@ -48,7 +48,8 @@ impl SessionBuilder {
         let client = match &self.client {
             Some(c) => c,
             None => {
-                return Err(format!("{} Attempt to create a Session without an HTTP client", self.key));
+                return Err(format!(
+                    "{} Attempt to create a Session without an HTTP client", self.key));
             }
         };
 
@@ -71,7 +72,7 @@ impl Session {
         SessionBuilder::new()
     }
 
-    async fn http_round_trip(self, msg: sip2::Message) -> Option<sip2::Message> {
+    async fn http_round_trip(self, msg: sip2::Message) -> Result<sip2::Message, String> {
 
         let request = self.client.post("https://localhost/osrf-gateway-v1")
             .body("service=open-ils.auth&method=opensrf.system.echo&param=\"yo\"");
@@ -79,8 +80,7 @@ impl Session {
         let res = match request.send().await {
             Ok(v) => v,
             Err(e) => {
-                error!("{} HTTP request failed : {}", self, e);
-                return None;
+                return Err(format!("{} HTTP request failed : {}", self, e));
             }
         };
 
@@ -89,8 +89,8 @@ impl Session {
         let msg_json: String = match res.text().await {
             Ok(v) => v,
             Err(e) => {
-                error!("{} HTTP response failed to ready body text: {}", self, e);
-                return None;
+                return Err(format!(
+                    "{} HTTP response failed to ready body text: {}", self, e));
             }
         };
 
@@ -98,7 +98,7 @@ impl Session {
 
         // TODO json-to-sip
 
-        None
+        Err("TESTING")
     }
 }
 
