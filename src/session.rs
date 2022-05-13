@@ -5,9 +5,66 @@ use uuid::Uuid;
 use reqwest;
 use sip2;
 
+pub struct Session {
+
+    /// Unique session identifier
+    key: String,
+
+    /// E.g. https://localhost/sip2-mediator
+    http_url: String,
+
+    client: reqwest::blocking::Client,
+
+    // sip socket
+}
+
+impl Session {
+
+    pub fn builder() -> SessionBuilder {
+        SessionBuilder::new()
+    }
+
+    fn http_round_trip(self, msg: sip2::Message) -> Result<sip2::Message, String> {
+
+        let request = self.client.post(&self.http_url)
+            .header(reqwest::header::CONNECTION, "keep-alive")
+            .body("service=open-ils.auth&method=opensrf.system.echo&param=\"yo\"");
+
+        let res = match request.send() {
+            Ok(v) => v,
+            Err(e) => {
+                return Err(format!("{} HTTP request failed : {}", self, e));
+            }
+        };
+
+        debug!("HTTP response status: {} {}", res.status(), self);
+
+        let msg_json: String = match res.text() {
+            Ok(v) => v,
+            Err(e) => {
+                return Err(format!(
+                    "{} HTTP response failed to ready body text: {}", self, e));
+            }
+        };
+
+        debug!("{} HTTP response JSON: {}", self, msg_json);
+
+        // TODO json-to-sip
+
+        Err("TESTING".to_string())
+    }
+}
+
+impl fmt::Display for Session {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {                 
+        write!(f, "Session {}", self.key)
+    }
+}
+
 pub struct SessionBuilder {
     key: String,
-    client: Option<reqwest::Client>,
+    http_url: Option<String>,
+    client: Option<reqwest::blocking::Client>,
     // sip socket,
     ignore_invalid_ssl_cert: bool,
 }
@@ -21,6 +78,7 @@ impl SessionBuilder {
         SessionBuilder {
             key,
             client: None,
+            http_url: None,
             ignore_invalid_ssl_cert: false
         }
     }
@@ -30,14 +88,19 @@ impl SessionBuilder {
         self
     }
 
+    pub fn http_url(&mut self, http_url: &str) -> &mut SessionBuilder {
+        self.http_url = Some(http_url.to_string());
+        self
+    }
+
     pub fn http_client(&mut self) -> &mut SessionBuilder {
 
-        let builder = reqwest::Client::builder()
+        let builder = reqwest::blocking::Client::builder()
             .danger_accept_invalid_certs(self.ignore_invalid_ssl_cert);
 
         match builder.build() {
             Ok(c) => self.client = Some(c),
-            Err(e) => error!("{} Error building HTTP client: {}", self.key, e)
+            Err(e) => error!("{} Error building HTTP client: {}", self, e)
         }
 
         self
@@ -49,60 +112,27 @@ impl SessionBuilder {
             Some(c) => c,
             None => {
                 return Err(format!(
-                    "{} Attempt to create a Session without an HTTP client", self.key));
+                    "{} Attempt to create a Session without an HTTP client", self));
+            }
+        };
+
+        let http_url = match &self.http_url {
+            Some(h) => h,
+            None => {
+                return Err(format!(
+                    "{} Attempt to create a Session without an HTTP http_url", self));
             }
         };
 
         Ok(Session { 
             key: self.key.to_owned(), 
+            http_url: http_url.to_owned(), 
             client: client.to_owned() 
         })
     }
 }
 
-pub struct Session {
-    key: String,
-    client: reqwest::Client,
-    // socket
-}
-
-impl Session {
-
-    pub fn builder() -> SessionBuilder {
-        SessionBuilder::new()
-    }
-
-    async fn http_round_trip(self, msg: sip2::Message) -> Result<sip2::Message, String> {
-
-        let request = self.client.post("https://localhost/osrf-gateway-v1")
-            .body("service=open-ils.auth&method=opensrf.system.echo&param=\"yo\"");
-
-        let res = match request.send().await {
-            Ok(v) => v,
-            Err(e) => {
-                return Err(format!("{} HTTP request failed : {}", self, e));
-            }
-        };
-
-        debug!("HTTP response status: {} {}", res.status(), self);
-
-        let msg_json: String = match res.text().await {
-            Ok(v) => v,
-            Err(e) => {
-                return Err(format!(
-                    "{} HTTP response failed to ready body text: {}", self, e));
-            }
-        };
-
-        debug!("{} HTTP response JSON: {}", self, msg_json);
-
-        // TODO json-to-sip
-
-        Err("TESTING")
-    }
-}
-
-impl fmt::Display for Session {
+impl fmt::Display for SessionBuilder {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {                 
         write!(f, "Session {}", self.key)
     }
