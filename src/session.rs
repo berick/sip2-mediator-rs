@@ -1,10 +1,9 @@
 use std::fmt;
 use log::{debug, error};
-use serde_json::Value;
 use uuid::Uuid;
 use reqwest;
 use sip2;
-use serde_urlencoded;
+use serde_urlencoded as urlencoded;
 
 pub struct Session {
 
@@ -25,26 +24,29 @@ impl Session {
         SessionBuilder::new()
     }
 
-    fn http_round_trip(self, msg: sip2::Message) -> Result<sip2::Message, String> {
+    fn http_round_trip(self, msg: sip2::Message) -> Result<sip2::Message, ()> {
 
         let msg_json = match msg.to_json() {
             Ok(m) => m,
             Err(e) => {
-                return Err(format!("Failed translating SIP message to JSON: {}", e));
+                error!("Failed translating SIP message to JSON: {}", e);
+                return Err(());
             }
         };
 
-        let msg_encoded = match serde_urlencoded::to_string(msg_json) {
+        let msg_encoded = match urlencoded::to_string(msg_json) {
             Ok(m) => m,
             Err(e) => {
-                return Err(format!("Message URL encoding failed: {}", e));
+                error!("Error url-encoding SIP message: {}", e);
+                return Err(());
             }
         };
 
-        let key_encoded = match serde_urlencoded::to_string(&self.key) {
+        let key_encoded = match urlencoded::to_string(&self.key) {
             Ok(k) => k,
             Err(e) => {
-                return Err(format!("Session key URL encoding failed: {}", e));
+                error!("Error url-encoding session key: {}", e);
+                return Err(());
             }
         };
 
@@ -55,17 +57,26 @@ impl Session {
         let res = match request.send() {
             Ok(v) => v,
             Err(e) => {
-                return Err(format!("{} HTTP request failed : {}", self, e));
+                error!("{} HTTP request failed : {}", self, e);
+                return Err(());
             }
         };
+
+        if res.status() != 200 {
+            error!(
+                "HTTP server responded with a non-200 status: status={} res={:?}",
+                res.status(), res
+            );
+            return Err(());
+        }
 
         debug!("HTTP response status: {} {}", res.status(), self);
 
         let msg_json: String = match res.text() {
             Ok(v) => v,
             Err(e) => {
-                return Err(format!(
-                    "{} HTTP response failed to ready body text: {}", self, e));
+                error!("{} HTTP response failed to ready body text: {}", self, e);
+                return Err(());
             }
         };
 
@@ -73,7 +84,10 @@ impl Session {
 
         match sip2::Message::from_json(&msg_json) {
             Ok(m) => Ok(m),
-            Err(e) => Err(format!("http_round_trip from_json error: {}", e)),
+            Err(e) => {
+                error!("http_round_trip from_json error: {}", e);
+                return Err(());
+            }
         }
     }
 }
