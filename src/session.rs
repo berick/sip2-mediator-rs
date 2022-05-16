@@ -4,6 +4,7 @@ use serde_json::Value;
 use uuid::Uuid;
 use reqwest;
 use sip2;
+use serde_urlencoded;
 
 pub struct Session {
 
@@ -26,9 +27,30 @@ impl Session {
 
     fn http_round_trip(self, msg: sip2::Message) -> Result<sip2::Message, String> {
 
+        let msg_json = match msg.to_json() {
+            Ok(m) => m,
+            Err(e) => {
+                return Err(format!("Failed translating SIP message to JSON: {}", e));
+            }
+        };
+
+        let msg_encoded = match serde_urlencoded::to_string(msg_json) {
+            Ok(m) => m,
+            Err(e) => {
+                return Err(format!("Message URL encoding failed: {}", e));
+            }
+        };
+
+        let key_encoded = match serde_urlencoded::to_string(&self.key) {
+            Ok(k) => k,
+            Err(e) => {
+                return Err(format!("Session key URL encoding failed: {}", e));
+            }
+        };
+
         let request = self.client.post(&self.http_url)
             .header(reqwest::header::CONNECTION, "keep-alive")
-            .body("service=open-ils.auth&method=opensrf.system.echo&param=\"yo\"");
+            .body(format!("session={}&message={}", key_encoded, msg_encoded));
 
         let res = match request.send() {
             Ok(v) => v,
@@ -49,9 +71,10 @@ impl Session {
 
         debug!("{} HTTP response JSON: {}", self, msg_json);
 
-        // TODO json-to-sip
-
-        Err("TESTING".to_string())
+        match sip2::Message::from_json(&msg_json) {
+            Ok(m) => Ok(m),
+            Err(e) => Err(format!("http_round_trip from_json error: {}", e)),
+        }
     }
 }
 
