@@ -93,7 +93,7 @@ impl Session {
 }
 
 impl fmt::Display for Session {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {                 
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Session {}", self.key)
     }
 }
@@ -161,16 +161,16 @@ impl SessionBuilder {
             }
         };
 
-        Ok(Session { 
-            key: self.key.to_owned(), 
-            http_url: http_url.to_owned(), 
-            client: client.to_owned() 
+        Ok(Session {
+            key: self.key.to_owned(),
+            http_url: http_url.to_owned(),
+            client: client.to_owned()
         })
     }
 }
 
 impl fmt::Display for SessionBuilder {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {                 
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Session {}", self.key)
     }
 }

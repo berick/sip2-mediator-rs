@@ -76,9 +76,9 @@ fn parse_args() -> conf::Config {
 
     let sip_address = options.opt_str("sip-address").unwrap_or(String::from("localhost"));
     let http_host = options.opt_str("http-host").unwrap_or(String::from("localhost"));
-    let http_proto = options.opt_str("http-proto").unwrap_or(String::from("http"));
     let http_path = options.opt_str("http-path").unwrap_or(String::from("/sip2-mediator"));
 
+    let http_proto_str = options.opt_str("http-proto").unwrap_or(String::from("http"));
     let sip_port_str = options.opt_str("sip-port").unwrap_or(String::from("6001"));
     let http_port_str = options.opt_str("http-port").unwrap_or(String::from("80"));
     let max_clients_str = options.opt_str("max-clients").unwrap_or(String::from("256"));
@@ -90,6 +90,11 @@ fn parse_args() -> conf::Config {
     let ascii = options.opt_present("ascii");
     let daemonize = options.opt_present("daemonize");
     let ignore_ssl_errors = options.opt_present("ignore-ssl-errors");
+
+    let mut http_proto = conf::HttpProto::Http;
+    if http_proto_str.eq("https") {
+        http_proto = conf::HttpProto::Https;
+    }
 
     conf::Config {
         sip_address,
