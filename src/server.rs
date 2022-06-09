@@ -8,15 +8,6 @@ use std::net::TcpStream;
 use std::thread;
 use std::time::Duration;
 
-/*
-    let ses = Session::builder()
-        .ignore_invalid_ssl_cert(IGNORE_INVALID_CERT)
-        .http_url("https://localhost/osrf-gateway-v1")
-        .http_client()
-        .build()
-        .expect("Failed to build SIP session");
-*/
-
 pub struct Server {
     config: Config,
     connections: usize,
@@ -38,7 +29,8 @@ impl Server {
         for stream in listener.incoming() {
             match stream {
                 Ok(stream) => {
-                    //thread::spawn(|| self.handle_connection(stream));
+                    let conf = self.config.clone();
+                    thread::spawn(|| Session::run(conf, stream));
                 }
                 Err(e) => {
                     error!("Error accepting TCP connection {}", e);
@@ -47,16 +39,6 @@ impl Server {
 
             // TODO
             // check max connections and do some thread yielding as needed.
-        }
-    }
-
-    fn handle_connection(&self, mut stream: TcpStream) {
-        match stream.peer_addr() {
-            Ok(a) => info!("New SIP connection from {}", a),
-            Err(e) => {
-                error!("SIP connection has no peer addr? {}", e);
-                return;
-            }
         }
     }
 }

@@ -86,18 +86,12 @@ fn parse_args() -> conf::Config {
         .parse::<usize>()
         .expect("Invalid Max Clients");
 
-    let mut http_proto = conf::HttpProto::Http;
-    let http_proto_str = opstr("http-proto", "http");
-    if http_proto_str.eq("https") {
-        http_proto = conf::HttpProto::Https;
-    }
-
     conf::Config {
         sip_address: opstr("sip-address", "localhost"),
         sip_port,
         http_host: opstr("http-host", "localhost"),
         http_port,
-        http_proto,
+        http_proto: opstr("http-proto", "http"),
         http_path: opstr("http-path", "/sip2-mediator"),
         max_clients,
         ascii: options.opt_present("ascii"),
