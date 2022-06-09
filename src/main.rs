@@ -1,5 +1,7 @@
 use getopts;
 use std::env;
+use syslog::{Facility, Formatter3164, BasicLogger};
+use log::{SetLoggerError, LevelFilter, info};
 
 pub mod conf;
 pub mod server;
@@ -44,8 +46,34 @@ Options:
 
 fn main() {
     let conf = parse_args();
+
+    setup_logging(&conf);
+
     let mut server = server::Server::new(conf);
     server.serve();
+}
+
+fn setup_logging(config: &conf::Config) {
+
+    let formatter = Formatter3164 {
+        facility: Facility::LOG_LOCAL4, // TODO from config
+        hostname: None,
+        process: "sip2-mediator".into(),
+        pid: std::process::id(),
+    };
+
+    let logger = match syslog::unix(formatter) {
+        Ok(logger) => logger,
+        Err(e) => {
+            eprintln!("Cannot connect to syslog: {:?}", e);
+            return;
+        }
+    };
+
+    // TODO loglevel from config
+    log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
+        .map(|()| log::set_max_level(LevelFilter::Trace))
+        .expect("Boxed logger setup with loglevel");
 }
 
 fn parse_args() -> conf::Config {
@@ -63,6 +91,7 @@ fn parse_args() -> conf::Config {
     opts.optopt("", "ascii", "", "");
     opts.optopt("", "daemonize", "", "");
     opts.optopt("", "ignore-ssl-errors", "", "");
+    opts.optopt("", "help", "", "");
 
     let options = opts
         .parse(&args[1..])

@@ -40,7 +40,7 @@ impl Session {
 
         let key = Uuid::new_v4().as_simple().to_string()[0..16].to_string();
 
-        let http_url = format!("{}://{}:{}/{}",
+        let http_url = format!("{}://{}:{}{}",
             &config.http_proto,
             &config.http_host,
             config.http_port,
@@ -124,7 +124,12 @@ impl Session {
             }
         };
 
-        let msg_encoded = match urlencoded::to_string(msg_json) {
+        let values = [
+            ("session", &self.key),
+            ("message", &msg_json)
+        ];
+
+        let body = match urlencoded::to_string(&values) {
             Ok(m) => m,
             Err(e) => {
                 error!("Error url-encoding SIP message: {}", e);
@@ -132,19 +137,13 @@ impl Session {
             }
         };
 
-        let key_encoded = match urlencoded::to_string(&self.key) {
-            Ok(k) => k,
-            Err(e) => {
-                error!("Error url-encoding session key: {}", e);
-                return Err(());
-            }
-        };
+        trace!("POSTing content to HTTP: {}", body);
 
         let request = self
             .http_client
             .post(&self.http_url)
             .header(reqwest::header::CONNECTION, "keep-alive")
-            .body(format!("session={}&message={}", key_encoded, msg_encoded));
+            .body(body);
 
         let res = match request.send() {
             Ok(v) => v,

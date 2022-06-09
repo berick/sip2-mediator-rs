@@ -24,6 +24,8 @@ impl Server {
 
     pub fn serve(&mut self) {
 
+        info!("SIP2Meditor server staring up");
+
         let pool = ThreadPool::new(self.config.max_clients);
 
         let bind = format!("{}:{}", self.config.sip_address, self.config.sip_port);
@@ -37,7 +39,7 @@ impl Server {
             }
         }
 
-        debug!("Shutting down; waiting for all threads to complete");
+        info!("SIP2Mediator shutting down; waiting for threads to complete");
 
         pool.join();
     }
