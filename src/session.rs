@@ -1,16 +1,15 @@
-use log::{trace, debug, info, error};
+use super::conf;
+use log::{debug, error, info, trace};
 use reqwest;
 use serde_urlencoded as urlencoded;
-use std::net;
-use std::io;
 use sip2;
 use std::fmt;
+use std::io;
+use std::net;
 use uuid::Uuid;
-use super::conf;
 
 /// Manages the connection between a SIP client and the HTTP backend.
 pub struct Session {
-
     config: conf::Config,
 
     sip_connection: sip2::Connection,
@@ -25,11 +24,9 @@ pub struct Session {
 }
 
 impl Session {
-
     /// Our thread starts here.  If anything fails, we just log it and
     /// go away so as not to disrupt the main server thread.
     pub fn run(config: conf::Config, stream: net::TcpStream) {
-
         match stream.peer_addr() {
             Ok(a) => info!("New SIP connection from {}", a),
             Err(e) => {
@@ -40,11 +37,9 @@ impl Session {
 
         let key = Uuid::new_v4().as_simple().to_string()[0..16].to_string();
 
-        let http_url = format!("{}://{}:{}{}",
-            &config.http_proto,
-            &config.http_host,
-            config.http_port,
-            &config.http_path
+        let http_url = format!(
+            "{}://{}:{}{}",
+            &config.http_proto, &config.http_host, config.http_port, &config.http_path
         );
 
         let http_builder = reqwest::blocking::Client::builder()
@@ -63,7 +58,7 @@ impl Session {
             key,
             http_url,
             http_client,
-            sip_connection: sip2::Connection::new_from_stream(stream)
+            sip_connection: sip2::Connection::new_from_stream(stream),
         };
 
         ses.start();
@@ -73,7 +68,6 @@ impl Session {
         debug!("Session starting");
 
         loop {
-
             // TODO send end-session message when needed
 
             // Blocks waiting for a SIP request to arrive
@@ -115,7 +109,6 @@ impl Session {
     ///
     /// Blocks waiting for a response.
     fn http_round_trip(&self, msg: sip2::Message) -> Result<sip2::Message, ()> {
-
         let msg_json = match msg.to_json() {
             Ok(m) => m,
             Err(e) => {
@@ -124,10 +117,7 @@ impl Session {
             }
         };
 
-        let values = [
-            ("session", &self.key),
-            ("message", &msg_json)
-        ];
+        let values = [("session", &self.key), ("message", &msg_json)];
 
         let body = match urlencoded::to_string(&values) {
             Ok(m) => m,
@@ -137,7 +127,7 @@ impl Session {
             }
         };
 
-        trace!("POSTing content to HTTP: {}", body);
+        trace!("POST content: {}", body);
 
         let request = self
             .http_client
@@ -189,4 +179,3 @@ impl fmt::Display for Session {
         write!(f, "Session {}", self.key)
     }
 }
-

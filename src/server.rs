@@ -1,6 +1,6 @@
 use super::conf::Config;
 use super::session::Session;
-use log::{error, warn, info, debug};
+use log::{debug, error, info, warn};
 use sip2;
 use std::io::prelude::*;
 use std::net;
@@ -15,15 +15,11 @@ pub struct Server {
 }
 
 impl Server {
-
     pub fn new(config: Config) -> Server {
-        Server {
-            config,
-        }
+        Server { config }
     }
 
     pub fn serve(&mut self) {
-
         info!("SIP2Meditor server staring up");
 
         let pool = ThreadPool::new(self.config.max_clients);
@@ -46,7 +42,6 @@ impl Server {
 
     /// Pass the new SIP TCP stream off to a thread for processing.
     fn dispatch(&self, pool: &ThreadPool, stream: TcpStream) {
-
         debug!(
             "Accepting new SIP connection; active={} pending={}",
             pool.active_count(),
@@ -56,7 +51,6 @@ impl Server {
         let threads = pool.active_count() + pool.queued_count();
 
         if threads >= self.config.max_clients {
-
             warn!(
                 "Max clients={} reached.  Rejecting new connections",
                 self.config.max_clients
@@ -74,4 +68,3 @@ impl Server {
         pool.execute(|| Session::run(conf, stream));
     }
 }
-

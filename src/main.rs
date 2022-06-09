@@ -1,7 +1,7 @@
 use getopts;
+use log::{info, LevelFilter, SetLoggerError};
 use std::env;
-use syslog::{Facility, Formatter3164, BasicLogger};
-use log::{SetLoggerError, LevelFilter, info};
+use syslog::{BasicLogger, Facility, Formatter3164};
 
 pub mod conf;
 pub mod server;
@@ -54,7 +54,6 @@ fn main() {
 }
 
 fn setup_logging(config: &conf::Config) {
-
     let formatter = Formatter3164 {
         facility: Facility::LOG_LOCAL4, // TODO from config
         hostname: None,
