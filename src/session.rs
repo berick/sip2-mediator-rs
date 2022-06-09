@@ -1,12 +1,11 @@
-use std::fmt;
 use log::{debug, error};
-use uuid::Uuid;
 use reqwest;
-use sip2;
 use serde_urlencoded as urlencoded;
+use sip2;
+use std::fmt;
+use uuid::Uuid;
 
 pub struct Session {
-
     /// Unique session identifier
     key: String,
 
@@ -14,18 +13,15 @@ pub struct Session {
     http_url: String,
 
     client: reqwest::blocking::Client,
-
     // sip socket
 }
 
 impl Session {
-
     pub fn builder() -> SessionBuilder {
         SessionBuilder::new()
     }
 
     fn http_round_trip(self, msg: sip2::Message) -> Result<sip2::Message, ()> {
-
         let msg_json = match msg.to_json() {
             Ok(m) => m,
             Err(e) => {
@@ -50,7 +46,9 @@ impl Session {
             }
         };
 
-        let request = self.client.post(&self.http_url)
+        let request = self
+            .client
+            .post(&self.http_url)
             .header(reqwest::header::CONNECTION, "keep-alive")
             .body(format!("session={}&message={}", key_encoded, msg_encoded));
 
@@ -65,7 +63,8 @@ impl Session {
         if res.status() != 200 {
             error!(
                 "HTTP server responded with a non-200 status: status={} res={:?}",
-                res.status(), res
+                res.status(),
+                res
             );
             return Err(());
         }
@@ -107,16 +106,14 @@ pub struct SessionBuilder {
 }
 
 impl SessionBuilder {
-
     pub fn new() -> SessionBuilder {
-
         let key = Uuid::new_v4().as_simple().to_string()[0..16].to_string();
 
         SessionBuilder {
             key,
             client: None,
             http_url: None,
-            ignore_invalid_ssl_cert: false
+            ignore_invalid_ssl_cert: false,
         }
     }
 
@@ -131,25 +128,25 @@ impl SessionBuilder {
     }
 
     pub fn http_client(&mut self) -> &mut SessionBuilder {
-
         let builder = reqwest::blocking::Client::builder()
             .danger_accept_invalid_certs(self.ignore_invalid_ssl_cert);
 
         match builder.build() {
             Ok(c) => self.client = Some(c),
-            Err(e) => error!("{} Error building HTTP client: {}", self, e)
+            Err(e) => error!("{} Error building HTTP client: {}", self, e),
         }
 
         self
     }
 
     pub fn build(&self) -> Result<Session, String> {
-
         let client = match &self.client {
             Some(c) => c,
             None => {
                 return Err(format!(
-                    "{} Attempt to create a Session without an HTTP client", self));
+                    "{} Attempt to create a Session without an HTTP client",
+                    self
+                ));
             }
         };
 
@@ -157,14 +154,16 @@ impl SessionBuilder {
             Some(h) => h,
             None => {
                 return Err(format!(
-                    "{} Attempt to create a Session without an HTTP http_url", self));
+                    "{} Attempt to create a Session without an HTTP http_url",
+                    self
+                ));
             }
         };
 
         Ok(Session {
             key: self.key.to_owned(),
             http_url: http_url.to_owned(),
-            client: client.to_owned()
+            client: client.to_owned(),
         })
     }
 }
@@ -174,5 +173,3 @@ impl fmt::Display for SessionBuilder {
         write!(f, "Session {}", self.key)
     }
 }
-
-

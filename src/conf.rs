@@ -1,8 +1,7 @@
-
 #[derive(Debug, Clone)]
 pub enum HttpProto {
     Http,
-    Https
+    Https,
 }
 
 #[derive(Debug, Clone)]
@@ -18,4 +17,3 @@ pub struct Config {
     pub daemonize: bool,
     pub ignore_ssl_errors: bool,
 }
-

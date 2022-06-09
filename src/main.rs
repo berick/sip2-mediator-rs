@@ -1,9 +1,9 @@
-use std::env;
 use getopts;
+use std::env;
 
 pub mod conf;
-pub mod session;
 pub mod server;
+pub mod session;
 
 const HELP_TEXT: &str = r#"
 
@@ -49,7 +49,6 @@ fn main() {
 }
 
 fn parse_args() -> conf::Config {
-
     let args: Vec<String> = env::args().collect();
     let mut opts = getopts::Options::new();
 
@@ -83,7 +82,9 @@ fn parse_args() -> conf::Config {
 
     let sip_port = sip_port_str.parse::<u16>().expect("Invalid SIP port");
     let http_port = http_port_str.parse::<u16>().expect("Invalid HTTP port");
-    let max_clients = max_clients_str.parse::<usize>().expect("Invalid Max Clients");
+    let max_clients = max_clients_str
+        .parse::<usize>()
+        .expect("Invalid Max Clients");
 
     let mut http_proto = conf::HttpProto::Http;
     let http_proto_str = opstr("http-proto", "http");
@@ -104,4 +105,3 @@ fn parse_args() -> conf::Config {
         ignore_ssl_errors: options.opt_present("ignore-ssl-errors"),
     }
 }
-

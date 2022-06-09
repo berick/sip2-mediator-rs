@@ -1,13 +1,12 @@
-use sip2;
+use super::conf::Config;
+use super::session::Session;
 use log::{error, info};
+use sip2;
+use std::io::prelude::*;
+use std::net::TcpListener;
+use std::net::TcpStream;
 use std::thread;
 use std::time::Duration;
-use std::io::prelude::*;
-use std::net::TcpStream;
-use std::net::TcpListener;
-use super::session::Session;
-use super::conf::Config;
-
 
 /*
     let ses = Session::builder()
@@ -18,15 +17,12 @@ use super::conf::Config;
         .expect("Failed to build SIP session");
 */
 
-
 pub struct Server {
     config: Config,
     connections: usize,
 }
 
-
 impl Server {
-
     pub fn new(config: Config) -> Server {
         Server {
             config,
@@ -35,17 +31,15 @@ impl Server {
     }
 
     pub fn serve(&mut self) {
-
         let bind = format!("{}:{}", self.config.sip_address, self.config.sip_port);
 
         let listener = TcpListener::bind(bind).expect("Error starting SIP server");
 
         for stream in listener.incoming() {
-
             match stream {
                 Ok(stream) => {
                     //thread::spawn(|| self.handle_connection(stream));
-                },
+                }
                 Err(e) => {
                     error!("Error accepting TCP connection {}", e);
                 }
@@ -57,7 +51,6 @@ impl Server {
     }
 
     fn handle_connection(&self, mut stream: TcpStream) {
-
         match stream.peer_addr() {
             Ok(a) => info!("New SIP connection from {}", a),
             Err(e) => {
@@ -67,4 +60,3 @@ impl Server {
         }
     }
 }
-
