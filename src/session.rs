@@ -74,19 +74,48 @@ impl Session {
 
         loop {
 
-            let sip_msg = match self.sip_connection.recv() {
+            // TODO send end-session message when needed
+
+            // Blocks waiting for a SIP request to arrive
+            let sip_req = match self.sip_connection.recv() {
                 Ok(sm) => sm,
                 Err(e) => {
                     error!("SIP receive failed; session exiting: {}", e);
-                    return;
+                    break;
                 }
             };
 
-            trace!("Read SIP message: {}", sip_msg);
+            trace!("Read SIP message: {}", sip_req);
+
+            let sip_resp = match self.http_round_trip(sip_req) {
+                Ok(r) => r,
+                _ => {
+                    error!("Error processing SIP request. Session exiting");
+                    break;
+                }
+            };
+
+            if let Err(e) = self.sip_connection.send(&sip_resp) {
+                error!(
+                    "{} Error relaying response back to SIP client: {}. shutting down session",
+                    self, e
+                );
+                break;
+            }
+
+            debug!("{} Successfully relayed response back to SIP client", self);
         }
+
+        info!("SIP session {} shutting down", self);
+
+        self.sip_connection.disconnect().ok();
     }
 
-    fn http_round_trip(self, msg: sip2::Message) -> Result<sip2::Message, ()> {
+    /// Send a SIP client request to the HTTP backend for processing.
+    ///
+    /// Blocks waiting for a response.
+    fn http_round_trip(&self, msg: sip2::Message) -> Result<sip2::Message, ()> {
+
         let msg_json = match msg.to_json() {
             Ok(m) => m,
             Err(e) => {
