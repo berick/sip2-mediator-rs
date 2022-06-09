@@ -74,39 +74,34 @@ fn parse_args() -> conf::Config {
         std::process::exit(0);
     }
 
-    let sip_address = options.opt_str("sip-address").unwrap_or(String::from("localhost"));
-    let http_host = options.opt_str("http-host").unwrap_or(String::from("localhost"));
-    let http_path = options.opt_str("http-path").unwrap_or(String::from("/sip2-mediator"));
+    // Shorthand for extracting option values
+    let opstr = |v, d| options.opt_str(v).unwrap_or(String::from(d));
 
-    let http_proto_str = options.opt_str("http-proto").unwrap_or(String::from("http"));
-    let sip_port_str = options.opt_str("sip-port").unwrap_or(String::from("6001"));
-    let http_port_str = options.opt_str("http-port").unwrap_or(String::from("80"));
-    let max_clients_str = options.opt_str("max-clients").unwrap_or(String::from("256"));
+    let sip_port_str = opstr("sip-port", "6001");
+    let http_port_str = opstr("http-port", "80");
+    let max_clients_str = opstr("max-clients", "256");
 
     let sip_port = sip_port_str.parse::<u16>().expect("Invalid SIP port");
     let http_port = http_port_str.parse::<u16>().expect("Invalid HTTP port");
     let max_clients = max_clients_str.parse::<usize>().expect("Invalid Max Clients");
 
-    let ascii = options.opt_present("ascii");
-    let daemonize = options.opt_present("daemonize");
-    let ignore_ssl_errors = options.opt_present("ignore-ssl-errors");
-
     let mut http_proto = conf::HttpProto::Http;
+    let http_proto_str = opstr("http-proto", "http");
     if http_proto_str.eq("https") {
         http_proto = conf::HttpProto::Https;
     }
 
     conf::Config {
-        sip_address,
+        sip_address: opstr("sip-address", "localhost"),
         sip_port,
-        http_host,
+        http_host: opstr("http-host", "localhost"),
         http_port,
         http_proto,
-        http_path,
+        http_path: opstr("http-path", "/sip2-mediator"),
         max_clients,
-        ascii,
-        daemonize,
-        ignore_ssl_errors,
+        ascii: options.opt_present("ascii"),
+        daemonize: options.opt_present("daemonize"),
+        ignore_ssl_errors: options.opt_present("ignore-ssl-errors"),
     }
 }
 
