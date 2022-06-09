@@ -1,7 +1,8 @@
-use log::{debug, info, error};
+use log::{trace, debug, info, error};
 use reqwest;
 use serde_urlencoded as urlencoded;
 use std::net;
+use std::io;
 use sip2;
 use std::fmt;
 use uuid::Uuid;
@@ -12,7 +13,7 @@ pub struct Session {
 
     config: conf::Config,
 
-    sip_stream: net::TcpStream,
+    sip_connection: sip2::Connection,
 
     /// Unique session identifier
     key: String,
@@ -62,7 +63,7 @@ impl Session {
             key,
             http_url,
             http_client,
-            sip_stream: stream
+            sip_connection: sip2::Connection::new_from_stream(stream)
         };
 
         ses.start();
@@ -70,6 +71,19 @@ impl Session {
 
     fn start(&mut self) {
         debug!("Session starting");
+
+        loop {
+
+            let sip_msg = match self.sip_connection.recv() {
+                Ok(sm) => sm,
+                Err(e) => {
+                    error!("SIP receive failed; session exiting: {}", e);
+                    return;
+                }
+            };
+
+            trace!("Read SIP message: {}", sip_msg);
+        }
     }
 
     fn http_round_trip(self, msg: sip2::Message) -> Result<sip2::Message, ()> {
