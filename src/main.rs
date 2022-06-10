@@ -45,15 +45,15 @@ Options:
 "#;
 
 fn main() {
-    let conf = parse_args();
 
+    let conf = parse_args();
     setup_logging(&conf);
 
-    let mut server = server::Server::new(conf);
-    server.serve();
+    server::Server::new(conf).serve();
 }
 
 fn setup_logging(config: &conf::Config) {
+
     // This does not cover every possibility
     let facility = match &config.syslog_facility.to_lowercase()[..] {
         "local0" => Facility::LOG_LOCAL0,
@@ -97,6 +97,7 @@ fn setup_logging(config: &conf::Config) {
 }
 
 fn parse_args() -> conf::Config {
+
     let args: Vec<String> = env::args().collect();
     let mut opts = getopts::Options::new();
 
@@ -140,22 +141,30 @@ fn parse_args() -> conf::Config {
         config.http_url = String::from(v);
     }
 
-    /*
-    let max_clients_str = opstr("max-clients", "256");
-
-    let max_clients = max_clients_str
-        .parse::<usize>()
-        .expect("Invalid Max Clients");
-
-    conf::Config {
-        syslog_facility: opstr("syslog-facility", "LOCAL0"),
-        syslog_level: opstr("syslog-level", "INFO"),
-        max_clients,
-        ascii: options.opt_present("ascii"),
-        daemonize: options.opt_present("daemonize"),
-        ignore_ssl_errors: options.opt_present("ignore-ssl-errors"),
+    if let Some(v) = options.opt_str("max-clients") {
+        config.max_clients = v.parse::<usize>()
+            .expect("Invalid Max Clients");
     }
-    */
+
+    if let Some(v) = options.opt_str("syslog-facility") {
+        config.syslog_facility = String::from(v);
+    }
+
+    if let Some(v) = options.opt_str("syslog-level") {
+        config.syslog_level = String::from(v);
+    }
+
+    if options.opt_present("ascii") {
+        config.ascii = true;
+    }
+
+    if options.opt_present("daemonize") {
+        config.daemonize = true;
+    }
+
+    if options.opt_present("ignore-ssl-errors") {
+        config.ignore_ssl_errors = true;
+    }
 
     config
 }

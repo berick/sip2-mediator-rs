@@ -1,0 +1,10 @@
+sip2-mediator:
+    sip-address: 127.0.0.1
+    sip-port: 6001
+    http-url: http://localhost/sip2-mediator
+    syslog-facility: local4
+    syslog-level: debug
+    max-clients: 128
+    ascii: true
+    daemonize: true
+    ignore-ssl-errors: false

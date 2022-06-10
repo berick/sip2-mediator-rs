@@ -47,11 +47,14 @@ impl Session {
             }
         };
 
+        let mut con = sip2::Connection::new_from_stream(stream);
+        con.set_ascii(config.ascii);
+
         let mut ses = Session {
             key,
             http_url: config.http_url.to_string(),
             http_client,
-            sip_connection: sip2::Connection::new_from_stream(stream),
+            sip_connection: con,
         };
 
         ses.start();
