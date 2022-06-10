@@ -1,5 +1,5 @@
 use getopts;
-use log::{info, LevelFilter, SetLoggerError};
+use log::LevelFilter;
 use std::env;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
@@ -54,8 +54,30 @@ fn main() {
 }
 
 fn setup_logging(config: &conf::Config) {
+    // This does not cover every possibility
+    let facility = match &config.syslog_facility.to_lowercase()[..] {
+        "local0" => Facility::LOG_LOCAL0,
+        "local1" => Facility::LOG_LOCAL1,
+        "local2" => Facility::LOG_LOCAL2,
+        "local3" => Facility::LOG_LOCAL3,
+        "local4" => Facility::LOG_LOCAL4,
+        "local5" => Facility::LOG_LOCAL5,
+        "local6" => Facility::LOG_LOCAL0,
+        "local7" => Facility::LOG_LOCAL0,
+        _ => Facility::LOG_USER,
+    };
+
+    let level = match &config.syslog_level.to_lowercase()[..] {
+        "trace" => LevelFilter::Trace,
+        "debug" => LevelFilter::Debug,
+        "info" => LevelFilter::Info,
+        "warn" => LevelFilter::Warn,
+        "error" => LevelFilter::Error,
+        _ => LevelFilter::Info,
+    };
+
     let formatter = Formatter3164 {
-        facility: Facility::LOG_LOCAL4, // TODO from config
+        facility: facility,
         hostname: None,
         process: "sip2-mediator".into(),
         pid: std::process::id(),
@@ -69,9 +91,8 @@ fn setup_logging(config: &conf::Config) {
         }
     };
 
-    // TODO loglevel from config
     log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
-        .map(|()| log::set_max_level(LevelFilter::Trace))
+        .map(|()| log::set_max_level(level))
         .expect("Boxed logger setup with loglevel");
 }
 
@@ -87,6 +108,7 @@ fn parse_args() -> conf::Config {
     opts.optopt("", "http-path", "", "");
     opts.optopt("", "max-clients", "", "");
     opts.optopt("", "syslog-facility", "", "");
+    opts.optopt("", "syslog-level", "", "");
     opts.optopt("", "ascii", "", "");
     opts.optopt("", "daemonize", "", "");
     opts.optopt("", "ignore-ssl-errors", "", "");
@@ -121,6 +143,8 @@ fn parse_args() -> conf::Config {
         http_port,
         http_proto: opstr("http-proto", "http"),
         http_path: opstr("http-path", "/sip2-mediator"),
+        syslog_facility: opstr("syslog-facility", "LOCAL0"),
+        syslog_level: opstr("syslog-level", "INFO"),
         max_clients,
         ascii: options.opt_present("ascii"),
         daemonize: options.opt_present("daemonize"),

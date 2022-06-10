@@ -6,6 +6,8 @@ pub struct Config {
     pub http_port: u16,
     pub http_proto: String,
     pub http_path: String,
+    pub syslog_facility: String,
+    pub syslog_level: String,
     pub max_clients: usize,
     pub ascii: bool,
     pub daemonize: bool,

@@ -1,13 +1,9 @@
 use super::conf::Config;
 use super::session::Session;
 use log::{debug, error, info, warn};
-use sip2;
-use std::io::prelude::*;
 use std::net;
 use std::net::TcpListener;
 use std::net::TcpStream;
-use std::thread;
-use std::time::Duration;
 use threadpool::ThreadPool;
 
 pub struct Server {

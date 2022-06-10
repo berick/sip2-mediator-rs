@@ -4,14 +4,11 @@ use reqwest;
 use serde_urlencoded as urlencoded;
 use sip2;
 use std::fmt;
-use std::io;
 use std::net;
 use uuid::Uuid;
 
 /// Manages the connection between a SIP client and the HTTP backend.
 pub struct Session {
-    config: conf::Config,
-
     sip_connection: sip2::Connection,
 
     /// Unique session identifier
@@ -54,7 +51,6 @@ impl Session {
         };
 
         let mut ses = Session {
-            config,
             key,
             http_url,
             http_client,
@@ -65,7 +61,7 @@ impl Session {
     }
 
     fn start(&mut self) {
-        debug!("Session starting");
+        debug!("{} starting", self);
 
         loop {
             // TODO send end-session message when needed
@@ -74,17 +70,17 @@ impl Session {
             let sip_req = match self.sip_connection.recv() {
                 Ok(sm) => sm,
                 Err(e) => {
-                    error!("SIP receive failed; session exiting: {}", e);
+                    error!("{} SIP receive exited early; ending session: [{}]", self, e);
                     break;
                 }
             };
 
-            trace!("Read SIP message: {}", sip_req);
+            trace!("{} Read SIP message: {:?}", self, sip_req);
 
             let sip_resp = match self.http_round_trip(&sip_req) {
                 Ok(r) => r,
                 _ => {
-                    error!("Error processing SIP request. Session exiting");
+                    error!("{} Error processing SIP request. Session exiting", self);
                     break;
                 }
             };
@@ -100,7 +96,7 @@ impl Session {
             debug!("{} Successfully relayed response back to SIP client", self);
         }
 
-        info!("SIP session {} shutting down", self);
+        info!("{} shutting down", self);
 
         self.sip_connection.disconnect().ok();
 
@@ -108,14 +104,17 @@ impl Session {
         self.send_end_session();
     }
 
+    /// Send the final End Session (XS) message to the HTTP backend.
+    ///
+    /// Response and errors are ignored since this is the final step
+    /// in the session shuting down.
     fn send_end_session(&self) {
+        trace!("{} sending end of session message to HTTP backend", self);
 
         let msg_spec = sip2::spec::Message::from_code("XS").unwrap();
 
         let msg = sip2::Message::new(&msg_spec, vec![], vec![]);
 
-        // We don't really care about the result of this call or if it
-        // produces an error because we are getting outta here.
         self.http_round_trip(&msg).ok();
     }
 
@@ -126,7 +125,7 @@ impl Session {
         let msg_json = match msg.to_json() {
             Ok(m) => m,
             Err(e) => {
-                error!("Failed translating SIP message to JSON: {}", e);
+                error!("{} Failed translating SIP message to JSON: {}", self, e);
                 return Err(());
             }
         };
@@ -136,12 +135,12 @@ impl Session {
         let body = match urlencoded::to_string(&values) {
             Ok(m) => m,
             Err(e) => {
-                error!("Error url-encoding SIP message: {}", e);
+                error!("{}, Error url-encoding SIP message: {}", self, e);
                 return Err(());
             }
         };
 
-        trace!("POST content: {}", body);
+        trace!("{} Posting content: {}", self, body);
 
         let request = self
             .http_client
@@ -159,14 +158,15 @@ impl Session {
 
         if res.status() != 200 {
             error!(
-                "HTTP server responded with a non-200 status: status={} res={:?}",
+                "{} HTTP server responded with a non-200 status: status={} res={:?}",
+                self,
                 res.status(),
                 res
             );
             return Err(());
         }
 
-        debug!("HTTP response status: {} {}", res.status(), self);
+        debug!("{} HTTP response status: {}", self, res.status());
 
         let msg_json: String = match res.text() {
             Ok(v) => v,
@@ -181,7 +181,7 @@ impl Session {
         match sip2::Message::from_json(&msg_json) {
             Ok(m) => Ok(m),
             Err(e) => {
-                error!("http_round_trip from_json error: {}", e);
+                error!("{} http_round_trip from_json error: {}", self, e);
                 return Err(());
             }
         }
