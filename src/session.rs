@@ -81,7 +81,7 @@ impl Session {
 
             trace!("Read SIP message: {}", sip_req);
 
-            let sip_resp = match self.http_round_trip(sip_req) {
+            let sip_resp = match self.http_round_trip(&sip_req) {
                 Ok(r) => r,
                 _ => {
                     error!("Error processing SIP request. Session exiting");
@@ -103,12 +103,26 @@ impl Session {
         info!("SIP session {} shutting down", self);
 
         self.sip_connection.disconnect().ok();
+
+        // Tell the HTTP back-end our session is done.
+        self.send_end_session();
+    }
+
+    fn send_end_session(&self) {
+
+        let msg_spec = sip2::spec::Message::from_code("XS").unwrap();
+
+        let msg = sip2::Message::new(&msg_spec, vec![], vec![]);
+
+        // We don't really care about the result of this call or if it
+        // produces an error because we are getting outta here.
+        self.http_round_trip(&msg).ok();
     }
 
     /// Send a SIP client request to the HTTP backend for processing.
     ///
     /// Blocks waiting for a response.
-    fn http_round_trip(&self, msg: sip2::Message) -> Result<sip2::Message, ()> {
+    fn http_round_trip(&self, msg: &sip2::Message) -> Result<sip2::Message, ()> {
         let msg_json = match msg.to_json() {
             Ok(m) => m,
             Err(e) => {
