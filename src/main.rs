@@ -100,12 +100,10 @@ fn parse_args() -> conf::Config {
     let args: Vec<String> = env::args().collect();
     let mut opts = getopts::Options::new();
 
+    opts.optopt("", "config-file", "", "");
     opts.optopt("", "sip-address", "", "");
     opts.optopt("", "sip-port", "", "");
-    opts.optopt("", "http-host", "", "");
-    opts.optopt("", "http-port", "", "");
-    opts.optopt("", "http-proto", "", "");
-    opts.optopt("", "http-path", "", "");
+    opts.optopt("", "http-url", "", "");
     opts.optopt("", "max-clients", "", "");
     opts.optopt("", "syslog-facility", "", "");
     opts.optopt("", "syslog-level", "", "");
@@ -123,26 +121,33 @@ fn parse_args() -> conf::Config {
         std::process::exit(0);
     }
 
-    // Shorthand for extracting option values
-    let opstr = |v, d| options.opt_str(v).unwrap_or(String::from(d));
+    let mut config = conf::Config::new();
 
-    let sip_port_str = opstr("sip-port", "6001");
-    let http_port_str = opstr("http-port", "80");
+    // Start with the config file then override w/ command line options
+    if let Some(v) = options.opt_str("config-file") {
+        config.read_yaml(&v);
+    }
+
+    if let Some(v) = options.opt_str("sip-address") {
+        config.sip_address = String::from(v);
+    }
+
+    if let Some(v) = options.opt_str("sip-port") {
+        config.sip_port = v.parse::<u16>().expect("Invalid SIP port");
+    }
+
+    if let Some(v) = options.opt_str("http-url") {
+        config.http_url = String::from(v);
+    }
+
+    /*
     let max_clients_str = opstr("max-clients", "256");
 
-    let sip_port = sip_port_str.parse::<u16>().expect("Invalid SIP port");
-    let http_port = http_port_str.parse::<u16>().expect("Invalid HTTP port");
     let max_clients = max_clients_str
         .parse::<usize>()
         .expect("Invalid Max Clients");
 
     conf::Config {
-        sip_address: opstr("sip-address", "localhost"),
-        sip_port,
-        http_host: opstr("http-host", "localhost"),
-        http_port,
-        http_proto: opstr("http-proto", "http"),
-        http_path: opstr("http-path", "/sip2-mediator"),
         syslog_facility: opstr("syslog-facility", "LOCAL0"),
         syslog_level: opstr("syslog-level", "INFO"),
         max_clients,
@@ -150,4 +155,7 @@ fn parse_args() -> conf::Config {
         daemonize: options.opt_present("daemonize"),
         ignore_ssl_errors: options.opt_present("ignore-ssl-errors"),
     }
+    */
+
+    config
 }

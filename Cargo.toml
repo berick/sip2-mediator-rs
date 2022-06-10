@@ -6,13 +6,18 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-log = "0.4"
-syslog = "6.0"
-uuid = { version = "1", features = ["v4"] }
-serde_json = "1"
-serde_urlencoded = "0.7"
+log = "0.4.17"
+syslog = "6.0.1"
+uuid = { version = "1.1.1", features = ["v4"] }
+serde_json = "1.0.81"
+serde_urlencoded = "0.7.1"
 reqwest = { version = "0.11.10", features = ["blocking"] }
-#sip2 = { version = "0.2", features = ["json"] }
-sip2 = { version = "0.2", features = ["json"], path = "../sip2-client-rs" }
-getopts = "0.2"
-threadpool = "1.8"
+sip2 = { version = "0.2.1", features = ["json"] }
+#sip2 = { version = "0.2.1", features = ["json"], path = "../sip2-client-rs" }
+getopts = "0.2.21"
+threadpool = "1.8.1"
+yaml-rust = "0.4.5"                                                            
+
+[[bin]]
+name = "sip2-mediator"
+path = "src/main.rs"

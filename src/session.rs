@@ -21,9 +21,11 @@ pub struct Session {
 }
 
 impl Session {
+
     /// Our thread starts here.  If anything fails, we just log it and
     /// go away so as not to disrupt the main server thread.
     pub fn run(config: conf::Config, stream: net::TcpStream) {
+
         match stream.peer_addr() {
             Ok(a) => info!("New SIP connection from {}", a),
             Err(e) => {
@@ -33,11 +35,6 @@ impl Session {
         }
 
         let key = Uuid::new_v4().as_simple().to_string()[0..16].to_string();
-
-        let http_url = format!(
-            "{}://{}:{}{}",
-            &config.http_proto, &config.http_host, config.http_port, &config.http_path
-        );
 
         let http_builder = reqwest::blocking::Client::builder()
             .danger_accept_invalid_certs(config.ignore_ssl_errors);
@@ -52,7 +49,7 @@ impl Session {
 
         let mut ses = Session {
             key,
-            http_url,
+            http_url: config.http_url.to_string(),
             http_client,
             sip_connection: sip2::Connection::new_from_stream(stream),
         };
