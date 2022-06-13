@@ -39,9 +39,6 @@ Options:
     --ascii
         Normalize and encode data returned to SIP clients as ASCII.
         Otherwise, uses UTF8.
-
-    --daemonize
-        Detach and background the process.
 "#;
 
 fn main() {
@@ -109,7 +106,6 @@ fn parse_args() -> conf::Config {
     opts.optopt("", "syslog-facility", "", "");
     opts.optopt("", "syslog-level", "", "");
     opts.optopt("", "ascii", "", "");
-    opts.optopt("", "daemonize", "", "");
     opts.optopt("", "ignore-ssl-errors", "", "");
     opts.optopt("", "help", "", "");
 
@@ -156,10 +152,6 @@ fn parse_args() -> conf::Config {
 
     if options.opt_present("ascii") {
         config.ascii = true;
-    }
-
-    if options.opt_present("daemonize") {
-        config.daemonize = true;
     }
 
     if options.opt_present("ignore-ssl-errors") {

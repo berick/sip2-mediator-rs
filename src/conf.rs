@@ -10,7 +10,6 @@ pub struct Config {
     pub syslog_level: String,
     pub max_clients: usize,
     pub ascii: bool,
-    pub daemonize: bool,
     pub ignore_ssl_errors: bool,
 }
 
@@ -25,7 +24,6 @@ impl Config {
             syslog_level: String::from("INFO"),
             max_clients: 64,
             ascii: true,
-            daemonize: true,
             ignore_ssl_errors: false,
         }
     }
@@ -69,10 +67,6 @@ impl Config {
 
         if let Some(v) = root["ascii"].as_bool() {
             self.ascii = v;
-        }
-
-        if let Some(v) = root["daemonize"].as_bool() {
-            self.daemonize = v;
         }
 
         if let Some(v) = root["ignore-ssl-errors"].as_bool() {
