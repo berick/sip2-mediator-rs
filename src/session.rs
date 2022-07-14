@@ -64,7 +64,6 @@ impl Session {
         debug!("{} starting", self);
 
         loop {
-            // TODO send end-session message when needed
 
             // Blocks waiting for a SIP request to arrive
             let sip_req = match self.sip_connection.recv() {
@@ -77,6 +76,7 @@ impl Session {
 
             trace!("{} Read SIP message: {:?}", self, sip_req);
 
+            // Relay the request to the HTTP backend and wait for a response.
             let sip_resp = match self.http_round_trip(&sip_req) {
                 Ok(r) => r,
                 _ => {
@@ -85,6 +85,7 @@ impl Session {
                 }
             };
 
+            // Send the HTTP response back to the SIP client as a SIP message.
             if let Err(e) = self.sip_connection.send(&sip_resp) {
                 error!(
                     "{} Error relaying response back to SIP client: {}. shutting down session",
