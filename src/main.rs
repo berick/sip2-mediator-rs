@@ -107,7 +107,7 @@ fn parse_args() -> conf::Config {
     opts.optopt("", "syslog-level", "", "");
     opts.optopt("", "ascii", "", "");
     opts.optopt("", "ignore-ssl-errors", "", "");
-    opts.optopt("", "help", "", "");
+    opts.optflag("", "help", "");
 
     let options = opts
         .parse(&args[1..])
