@@ -14,7 +14,6 @@ pub struct Config {
 }
 
 impl Config {
-
     pub fn new() -> Config {
         Config {
             sip_address: String::from("localhost"),
@@ -32,12 +31,11 @@ impl Config {
     ///
     /// Panics if the file is not formatted correctly
     pub fn read_yaml(&mut self, filename: &str) {
+        let yaml_text =
+            fs::read_to_string(filename).expect("Read YAML configuration file to string");
 
-        let yaml_text = fs::read_to_string(filename)
-            .expect("Read YAML configuration file to string");
-
-        let yaml_docs = YamlLoader::load_from_str(&yaml_text)
-            .expect("Parsing configuration file as YAML");
+        let yaml_docs =
+            YamlLoader::load_from_str(&yaml_text).expect("Parsing configuration file as YAML");
 
         let root = &yaml_docs[0]["sip2-mediator"];
 

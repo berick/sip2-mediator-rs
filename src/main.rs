@@ -42,7 +42,6 @@ Options:
 "#;
 
 fn main() {
-
     let conf = parse_args();
     setup_logging(&conf);
 
@@ -50,7 +49,6 @@ fn main() {
 }
 
 fn setup_logging(config: &conf::Config) {
-
     // This does not cover every possibility
     let facility = match &config.syslog_facility.to_lowercase()[..] {
         "local0" => Facility::LOG_LOCAL0,
@@ -94,7 +92,6 @@ fn setup_logging(config: &conf::Config) {
 }
 
 fn parse_args() -> conf::Config {
-
     let args: Vec<String> = env::args().collect();
     let mut opts = getopts::Options::new();
 
@@ -138,8 +135,7 @@ fn parse_args() -> conf::Config {
     }
 
     if let Some(v) = options.opt_str("max-clients") {
-        config.max_clients = v.parse::<usize>()
-            .expect("Invalid Max Clients");
+        config.max_clients = v.parse::<usize>().expect("Invalid Max Clients");
     }
 
     if let Some(v) = options.opt_str("syslog-facility") {

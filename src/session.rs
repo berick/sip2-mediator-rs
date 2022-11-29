@@ -21,11 +21,9 @@ pub struct Session {
 }
 
 impl Session {
-
     /// Our thread starts here.  If anything fails, we just log it and
     /// go away so as not to disrupt the main server thread.
     pub fn run(config: conf::Config, stream: net::TcpStream) {
-
         match stream.peer_addr() {
             Ok(a) => info!("New SIP connection from {}", a),
             Err(e) => {
@@ -64,7 +62,6 @@ impl Session {
         debug!("{} starting", self);
 
         loop {
-
             // Blocks waiting for a SIP request to arrive
             let sip_req = match self.sip_connection.recv() {
                 Ok(sm) => sm,
@@ -84,6 +81,8 @@ impl Session {
                     break;
                 }
             };
+
+            log::trace!("{self} HTTP server replied with {sip_resp:?}");
 
             // Send the HTTP response back to the SIP client as a SIP message.
             if let Err(e) = self.sip_connection.send(&sip_resp) {

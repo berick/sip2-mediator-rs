@@ -11,8 +11,9 @@ syslog = "6.0.1"
 uuid = { version = "1.1.1", features = ["v4"] }
 serde_urlencoded = "0.7.1"
 reqwest = { version = "0.11.10", features = ["blocking"] }
-sip2 = { version = "0.2.2", features = ["json"] }
-#sip2 = { version = "0.2.1", features = ["json"], path = "../sip2-client-rs" }
+#sip2 = { version = "0.2.2", features = ["json"] }
+#sip2 = { version = "0.2.2", features = ["json"], path = "../sip2-client-rs" }
+sip2 = { git = "https://github.com/berick/sip2-client-rs", features = ["json"], version = "0.2.2" }
 getopts = "0.2.21"
 threadpool = "1.8.1"
 yaml-rust = "0.4.5"                                                            
