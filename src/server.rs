@@ -5,18 +5,31 @@ use std::net;
 use std::net::TcpListener;
 use std::net::TcpStream;
 use threadpool::ThreadPool;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+//use signal_hook as sigs; TODO
 
 pub struct Server {
     config: Config,
+    /// If true, we're shutting down.
+    shutdown: Arc<AtomicBool>,
 }
 
 impl Server {
     pub fn new(config: Config) -> Server {
-        Server { config }
+        Server {
+            config,
+            shutdown: Arc::new(AtomicBool::new(false)),
+        }
     }
 
     pub fn serve(&mut self) {
         info!("SIP2Meditor server staring up");
+
+        if let Err(e) = self.setup_signal_handlers() {
+            log::error!("Cannot setup signal handlers: {e}");
+            return;
+        }
 
         let pool = ThreadPool::new(self.config.max_clients);
 
@@ -28,6 +41,11 @@ impl Server {
             match stream {
                 Ok(s) => self.dispatch(&pool, s),
                 Err(e) => error!("Error accepting TCP connection {}", e),
+            }
+
+            if self.shutdown.load(Ordering::Relaxed) {
+                log::debug!("Shutdown signal received, exiting listen loop");
+                break;
             }
         }
 
@@ -61,6 +79,25 @@ impl Server {
 
         // Hand the stream off for processing.
         let conf = self.config.clone();
-        pool.execute(|| Session::run(conf, stream));
+        let shutdown = self.shutdown.clone();
+        pool.execute(|| Session::run(conf, stream, shutdown));
     }
+
+    fn setup_signal_handlers(&self) -> Result<(), String> {
+        /* Maybe later.
+        if let Err(e) = sigs::flag::register(sigs::consts::SIGHUP, self.reload.clone()) {
+            return Err(format!("Cannot register HUP signal: {e}"));
+        }
+        */
+
+        /* Disabling for now until the tcp stream timeout is in place,
+         * otherwise SIGINT will just hang if no traffic is flowing.
+        if let Err(e) = sigs::flag::register(sigs::consts::SIGINT, self.shutdown.clone()) {
+            return Err(format!("Cannot register INT signal: {e}"));
+        }
+        */
+
+        Ok(())
+    }
+
 }

@@ -6,6 +6,8 @@ use sip2;
 use std::fmt;
 use std::net;
 use uuid::Uuid;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 /// Manages the connection between a SIP client and the HTTP backend.
 pub struct Session {
@@ -18,12 +20,15 @@ pub struct Session {
     http_url: String,
 
     http_client: reqwest::blocking::Client,
+
+    /// If true, we're shutting down.
+    shutdown: Arc<AtomicBool>,
 }
 
 impl Session {
     /// Our thread starts here.  If anything fails, we just log it and
     /// go away so as not to disrupt the main server thread.
-    pub fn run(config: conf::Config, stream: net::TcpStream) {
+    pub fn run(config: conf::Config, stream: net::TcpStream, shutdown: Arc<AtomicBool>) {
         match stream.peer_addr() {
             Ok(a) => info!("New SIP connection from {}", a),
             Err(e) => {
@@ -45,11 +50,12 @@ impl Session {
             }
         };
 
-        let mut con = sip2::Connection::new_from_stream(stream);
+        let mut con = sip2::Connection::from_stream(stream);
         con.set_ascii(config.ascii);
 
         let mut ses = Session {
             key,
+            shutdown,
             http_url: config.http_url.to_string(),
             http_client,
             sip_connection: con,
@@ -94,6 +100,11 @@ impl Session {
             }
 
             debug!("{} Successfully relayed response back to SIP client", self);
+
+            if self.shutdown.load(Ordering::Relaxed) {
+                log::debug!("Shutdown signal received, exiting listen loop");
+                break;
+            }
         }
 
         info!("{} shutting down", self);

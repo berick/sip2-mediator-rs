@@ -11,12 +11,14 @@ syslog = "6.0"
 uuid = { version = "1.1", features = ["v4"] }
 serde_urlencoded = "0.7"
 reqwest = { version = "0.11", features = ["blocking"] }
-#sip2 = { version = "0.2.2", features = ["json"] }
-#sip2 = { version = "0.2.2", features = ["json"], path = "../sip2-client-rs" }
-sip2 = { git = "https://github.com/berick/sip2-client-rs", features = ["json"], version = "0.2" }
+sip2 = { version = "0.3.1", features = ["json"] }
 getopts = "0.2"
 threadpool = "1.8"
 yaml-rust = "0.4"
+# TODO tcp listener read timeouts
+#signal-hook = "0.3"
+# TODO tcp listener read timeouts
+#socket2 = "0.5.6"
 
 [[bin]]
 name = "sip2-mediator"
